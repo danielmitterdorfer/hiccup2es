@@ -12,7 +12,7 @@ BULK_SIZE = 5000
 
 
 def parse_args():
-    p = argparse.ArgumentParser(prog="jhiccup-es", description="Import jHiccup logs to Elasticsearch")
+    p = argparse.ArgumentParser(prog="hiccup2es", description="Import jHiccup logs to Elasticsearch")
     p.add_argument('--version', action='version', version="%(prog)s " + __version__)
     p.add_argument(
         "--input-file",
