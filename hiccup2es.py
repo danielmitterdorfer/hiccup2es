@@ -5,7 +5,6 @@ import json
 import argparse
 from urllib import request
 
-
 __version__ = "0.0.1"
 
 BULK_SIZE = 5000
@@ -54,6 +53,7 @@ def parse_args():
 
 def as_bytes(data):
     return bytearray(data, encoding="UTF-8")
+
 
 def create_index(host, port, index, type_name):
     url = "http://%s:%s/%s" % (host, port, index)
@@ -112,6 +112,7 @@ def main():
                 tup = line.strip().split(",")
                 d = {
                     "timestamp": round((start_timestamp + float(tup[0])) * 1000),
+                    "relative-time-seconds": float(tup[0]),
                     "int_count": tup[1],
                     "int_50": tup[2],
                     "int_90": tup[3],

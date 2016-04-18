@@ -7,6 +7,10 @@
           "format": "epoch_millis",
           "doc_values": true
         },
+        "relative-time-seconds": {
+          "type": "float",
+          "doc_values": true
+        },
         "type": {
           "type": "string",
           "doc_values": true,
