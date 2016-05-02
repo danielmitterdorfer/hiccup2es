@@ -3,11 +3,20 @@
 import re
 import json
 import argparse
-from urllib import request
+import urllib3
+try:
+    import certifi
+except ImportError:
+    certifi = None
 
 __version__ = "0.0.1"
 
 BULK_SIZE = 5000
+
+if certifi:
+    http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())
+else:
+    http = urllib3.PoolManager()
 
 
 def parse_args():
@@ -39,6 +48,12 @@ def parse_args():
         default="hiccup"
     )
     p.add_argument(
+        "--protocol",
+        help="Protocol to use to connect to Elasticsearch (default:http)",
+        default="http",
+        choices=["http", "https"]
+    )
+    p.add_argument(
         "--host",
         help="Elasticsearch host name (default:localhost)",
         default="localhost"
@@ -48,6 +63,16 @@ def parse_args():
         help="Elasticsearch HTTP port (default: 9200)",
         default=9200
     )
+    p.add_argument(
+        "--user",
+        help="User name for basic authentication",
+        default=""
+    )
+    p.add_argument(
+        "--password",
+        help="Password for basic authentication",
+        default=""
+    )
     return p.parse_args()
 
 
@@ -55,27 +80,34 @@ def as_bytes(data):
     return bytearray(data, encoding="UTF-8")
 
 
-def create_index(host, port, index, type_name):
-    url = "http://%s:%s/%s" % (host, port, index)
+def auth_header(user, password):
+    if user and password:
+        return urllib3.make_headers(basic_auth="%s:%s" % (user, password))
+    else:
+        return None
+
+
+def create_index(endpoint, user, password, index, type_name):
+    url = "%s/%s" % (endpoint, index)
 
     with open('mapping.json', 'r') as mapping_file:
         mapping = mapping_file.read().replace("##TYPE_NAME##", type_name)
 
-    req = request.Request(url=url, data=as_bytes(mapping), method='PUT')
-    with request.urlopen(req) as response:
-        pass
+    response = http.urlopen(method="PUT", url=url, headers=auth_header(user, password), body=as_bytes(mapping))
     if response.status >= 300:
-        raise RuntimeError("Could not create index [%s]. Elasticsearch returned HTTP status [%s]." % (index, response.status))
+        raise RuntimeError("Could not create index [%s]. Elasticsearch returned HTTP status [%s] (content: [%s])"
+                           % (index, response.status, response.data))
 
 
 # Beware, this is just a very basic bulk API, we just check HTTP status but not whether the bulk failed!
-def send_bulk(host, port, data):
-    url = "http://%s:%s/_bulk" % (host, port)
-    with request.urlopen(url, data=as_bytes("\n".join(data))) as response:
-        pass
+def send_bulk(endpoint, user, password, data):
+    url = "%s/_bulk" % endpoint
+
+    response = http.urlopen(method="POST", url=url, headers=auth_header(user, password), body=as_bytes("\n".join(data)))
     # this is *NOT* a guarantee that everything went smooth but it should do for now
     if response.status >= 300:
-        raise RuntimeError("Could not bulk index. Elasticsearch returned HTTP status [%s]." % response.status)
+        raise RuntimeError("Could not bulk index. Elasticsearch returned HTTP status [%s]. (content: [%s])"
+                           % (response.status, response.data))
 
 
 # This is the file format that we expect:
@@ -88,8 +120,10 @@ def send_bulk(host, port, data):
 def main():
     args = parse_args()
 
+    endpoint = "%s://%s:%s" % (args.protocol, args.host, args.port)
+
     if args.create_index:
-        create_index(args.host, args.port, args.index_name, args.type_name)
+        create_index(endpoint, args.user, args.password, args.index_name, args.type_name)
 
     start_time_pattern = re.compile("StartTime: (\d.*) \(.*")
     bulk_data = []
@@ -123,12 +157,12 @@ def main():
                 bulk_data.append(json.dumps(d))
 
                 if len(bulk_data) > BULK_SIZE:
-                    send_bulk(args.host, args.port, bulk_data)
+                    send_bulk(endpoint, args.user, args.password, bulk_data)
                     bulk_data = []
 
     # also send last chunk
     if len(bulk_data) > 0:
-        send_bulk(args.host, args.port, bulk_data)
+        send_bulk(endpoint, args.user, args.password, bulk_data)
 
 
 if __name__ == "__main__":

@@ -14,7 +14,7 @@ Just clone the repo:
 git clone https://github.com/danielmitterdorfer/hiccup2es.git
 ```
 
-`hiccup2es` has no additional dependencies except Python 3.
+`hiccup2es` has no additional dependencies except Python 3. If you use https and want to verify SSL certificates you can install certifi with `pip3 install certifi`.
 
 ## Usage / Workflow
 
@@ -25,10 +25,6 @@ git clone https://github.com/danielmitterdorfer/hiccup2es.git
 
 <img src="kibana-hiccuplog.png" width="800">
 
-## Restrictions
-
-Currently only anonymous access to Elasticsearch via http is possible. `hiccup2es` also supports only the above-mentioned workflow.
- 
 ## License
 
 `hiccup2es` is distributed under the terms of the [Apache Software Foundation license, version 2.0](LICENSE).
