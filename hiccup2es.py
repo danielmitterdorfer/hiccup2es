@@ -145,12 +145,12 @@ def main():
 
                 tup = line.strip().split(",")
                 d = {
-                    "timestamp": round((start_timestamp + float(tup[0])) * 1000),
+                    "@timestamp": round((start_timestamp + float(tup[0])) * 1000),
                     "relative-time-seconds": float(tup[0]),
-                    "int_count": tup[1],
-                    "int_50": tup[2],
-                    "int_90": tup[3],
-                    "int_100": tup[4],
+                    #"int_count": tup[1],
+                    #"int_50": tup[2],
+                    #"int_90": tup[3],
+                    "int_100": tup[2],
                     "type": args.file_type
                 }
                 bulk_data.append('{ "index" : { "_index" : "%s", "_type" : "%s"} }' % (args.index_name, args.type_name))
